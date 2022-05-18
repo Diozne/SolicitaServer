@@ -88,7 +88,7 @@ int main()
 				FD_SET(client, &master);
 
 				// Send a welcome message to the connected client
-				string welcomeMsg = "SERVER:Welcome to the Awesome Chat Server!\n";
+				string welcomeMsg = "";
 				send(client, welcomeMsg.c_str(), welcomeMsg.size() + 1, 0);
 			}
 			else // It's an inbound message
@@ -136,13 +136,13 @@ int main()
 						if (outSock != sock)
 						{
 							//ss << "SOCKET #" << sock << ":" << buf << "\r\n";
-							//TODO FILTRAR NOME DE USUARIO E HORA DA MSG BONITINHO
-							ss << buf << "\r\n";
+							//TODO FILTRAR NOME DE USUARIO E HORA DA MSG BONITINHO  ss << buf << "\r\n";
+							ss << buf;
 						}
 						else
 						{
 							//ANTIGO ME: 
-							ss << buf << "\r\n";
+							ss << buf;
 						}
 
 						string strOut = ss.str();
