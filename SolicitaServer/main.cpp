@@ -9,22 +9,22 @@ using namespace std;
 
 int main()
 {
-	// Initialze winsock
+	// Inicializa WinSock
 	WSADATA wsData;
 	WORD ver = MAKEWORD(2, 2);
 
 	int wsOk = WSAStartup(ver, &wsData);
 	if (wsOk != 0)
 	{
-		cerr << "Can't Initialize winsock! Quitting" << endl;
+		cerr << "Falha ao inicializar winsock! Finalizando..." << endl;
 		return 99;
 	}
 
-	// Create a socket
+	// Cria o socket
 	SOCKET listening = socket(AF_INET, SOCK_STREAM, 0);
 	if (listening == INVALID_SOCKET)
 	{
-		cerr << "Can't create a socket! Quitting" << endl;
+		cerr << "Falha ao criar o socket! Finalizando..." << endl;
 		return 99;
 	}
 
@@ -51,52 +51,40 @@ int main()
 	// this will be changed by the \quit command (see below, bonus not in video!)
 	bool running = true;
 
-	cout << "TCP/IP CHAT SERVER v0.0.0" << endl;
+	cout << "TCP/IP CHAT SERVER v0.0.1" << endl;
 
 	while (running)
 	{
-		// Make a copy of the master file descriptor set, this is SUPER important because
-		// the call to select() is _DESTRUCTIVE_. The copy only contains the sockets that
-		// are accepting inbound connection requests OR messages. 
-
-		// E.g. You have a server and it's master file descriptor set contains 5 items;
-		// the listening socket and four clients. When you pass this set into select(), 
-		// only the sockets that are interacting with the server are returned. Let's say
-		// only one client is sending a message at that time. The contents of 'copy' will
-		// be one socket. You will have LOST all the other sockets.
-
-		// SO MAKE A COPY OF THE MASTER LIST TO PASS INTO select() !!!
-
 		fd_set copy = master;
 
 		// See who's talking to us
 		int socketCount = select(0, &copy, nullptr, nullptr, nullptr);
 
-		// Loop through all the current connections / potential connect
+		// Loop entre todas as conexões  / conexoes em potencial
 		for (int i = 0; i < socketCount; i++)
 		{
-			// Makes things easy for us doing this assignment
+			// facilita
 			SOCKET sock = copy.fd_array[i];
 
-			// Is it an inbound communication?
+			// Se tiver uma conexão vindo 
 			if (sock == listening)
 			{
-				// Accept a new connection
+				// Aceita a nova conexão
 				SOCKET client = accept(listening, nullptr, nullptr);
 
-				// Add the new connection to the list of connected clients
+				// Adiciona conexão a lista de clientes conectados
 				FD_SET(client, &master);
 
-				// Send a welcome message to the connected client
-				string welcomeMsg = "";
-				send(client, welcomeMsg.c_str(), welcomeMsg.size() + 1, 0);
+				// Envia uma mensagem de boas vindas ao cliente conectado (desabilitado)
+				//string welcomeMsg = "";
+				//send(client, welcomeMsg.c_str(), welcomeMsg.size() + 1, 0);
 			}
 			else // It's an inbound message
 			{
 				char buf[4096];
 				ZeroMemory(buf, 4096);
 
-				// Receive message
+				// Recebe mensagem
 				int bytesIn = recv(sock, buf, 4096, 0);
 				if (bytesIn <= 0)
 				{
@@ -106,22 +94,7 @@ int main()
 				}
 				else
 				{
-					// Check to see if it's a command. \quit kills the server
-					if (buf[0] == '\\')
-					{
-						// Is the command quit? 
-						string cmd = string(buf, bytesIn);
-						if (cmd == "\\quit")
-						{
-							running = false;
-							break;
-						}
-
-						// Unknown command
-						continue;
-					}
-
-					// Send message to other clients, and definiately NOT the listening socket
+					// Envia mensagem para todos os outros clientes, e não para o atual
 
 					for (u_int i = 0; i < master.fd_count; i++)
 					{
@@ -133,17 +106,7 @@ int main()
 
 						ostringstream ss;
 
-						if (outSock != sock)
-						{
-							//ss << "SOCKET #" << sock << ":" << buf << "\r\n";
-							//TODO FILTRAR NOME DE USUARIO E HORA DA MSG BONITINHO  ss << buf << "\r\n";
-							ss << buf;
-						}
-						else
-						{
-							//ANTIGO ME: 
-							ss << buf;
-						}
+						ss << buf;										
 
 						string strOut = ss.str();
 						send(outSock, strOut.c_str(), strOut.size() + 1, 0);
@@ -180,63 +143,3 @@ int main()
 	system("pause");
 	return 0;
 }
-
-
-/*
-* 
-* UM CLIENTE SO
-sockaddr_in client;
-	int clientSize = sizeof(client);
-
-	SOCKET clientSocket = accept(listening, (sockaddr*)&client, &clientSize);
-	if (clientSocket == INVALID_SOCKET)
-	{
-		cerr << "DEU RUIM AMIGO" << endl;
-	}
-
-	char host[NI_MAXHOST]; //Client remote name
-	char service[NI_MAXHOST]; //Server
-
-	ZeroMemory(host, NI_MAXHOST);
-	ZeroMemory(service, NI_MAXHOST);
-
-	if (getnameinfo((sockaddr*)&client, sizeof(client), host, NI_MAXHOST, service, NI_MAXSERV, 0) == 0)
-	{
-		cout << host << "connected on port " << service << endl;
-	}
-	else
-	{
-		inet_ntop(AF_INET, &client.sin_addr, host, NI_MAXHOST);
-		cout << host << "connected on port " << ntohs(client.sin_port) << endl;
-	}
-
-	//CLOSE LISTEN
-	closesocket(listening);
-
-	//While loop accept echo msg
-	char buf[4096];
-
-	while (true)
-	{
-		ZeroMemory(buf, 4096);
-
-		//Wait for client to send data
-		int bytesRecived = recv(clientSocket, buf, 4096, 0);
-		if (bytesRecived == SOCKET_ERROR)
-		{
-			cerr << "Error in recv(). Quitting" << endl;
-			break;
-		}
-		if (bytesRecived == 0)
-		{
-			cout << "Client Disconnected" << endl;
-			break;
-		}
-
-		//Echo message back to client
-		send(clientSocket, buf, bytesRecived + 1, 0);
-	}
-
-	//Close the socket
-	closesocket(clientSocket);
-*/
